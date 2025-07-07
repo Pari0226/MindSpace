@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Splash Screen Test</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #000;
+    }
+
+    .fade-in {
+      opacity: 0;
+      animation: fadeInEffect 2.5s forwards;
+      text-align: center;
+    }
+
+    @keyframes fadeInEffect {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 6rem;
+      color: #ffffff;
+      text-shadow: 0 0 15px rgba(0, 0, 0, 0.7),
+                   0 0 25px rgba(0, 0, 0, 0.5);
+      letter-spacing: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="fade-in">
+    <h1>MindSpace</h1>
+  </div>
+
+  <script>
+    setTimeout(() => {
+      window.location.href = "/login";
+      }, 3000);
+  </script>
+</body>
+</html>

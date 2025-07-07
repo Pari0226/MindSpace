@@ -1,0 +1,40 @@
+/* Center everything vertically and horizontally on the page */
+.centered-container {
+  min-height: 100vh; /* full viewport height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6; /* Tailwind's bg-gray-100 equivalent */
+  padding: 20px;
+  text-align: center;
+}
+
+/* Big, bold pink heading */
+.main-title {
+  font-size: 3rem; /* about text-5xl */
+  font-weight: 800; /* extrabold */
+  color: #ec4899; /* Tailwind pink-500 */
+  margin-bottom: 2rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Pink button styling */
+.btn {
+  background-color: #ec4899; /* pink-500 */
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  font-size: 1.125rem; /* about text-lg */
+  border-radius: 0.5rem; /* rounded-lg */
+  box-shadow: 0 4px 6px rgba(236, 72, 153, 0.5);
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.btn:hover {
+  background-color: #db2777; /* pink-600 */
+  box-shadow: 0 6px 12px rgba(219, 39, 119, 0.6);
+}

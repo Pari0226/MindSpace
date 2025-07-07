@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | MindSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-pink-50 min-h-screen p-6 font-sans">
+
+  <!-- Navigation Bar -->
+  <nav class="bg-white border border-pink-200 shadow-lg rounded-xl px-6 py-4 mb-8 flex justify-between items-center">
+    <div class="text-pink-700 text-xl font-bold">MindSpace</div>
+    <ul class="flex space-x-6 text-pink-600 font-medium text-sm">
+      <li><a href="/dashboard" class="hover:text-pink-800 transition">Dashboard</a></li>
+      <li><a href="/about" class="hover:text-pink-800 transition">About</a></li>
+      <li><a href="/help" class="hover:text-pink-800 transition">Help</a></li>
+      <li>
+        <a href="/logout" class="hover:text-white bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-lg transition">
+          Logout
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Welcome Header -->
+  <div class="text-center mb-6">
+    <h1 class="text-3xl font-bold text-pink-700">Welcome, {{ user }} 🌸</h1>
+    <p class="text-pink-500 mt-2">Here’s your mood tracking dashboard</p>
+  </div>
+
+  <!-- Mood Streak -->
+  <div class="bg-gradient-to-r from-pink-200 via-pink-100 to-pink-200 rounded-2xl shadow-md border border-pink-300 px-6 py-4 mb-8 text-center">
+    <h2 class="text-xl font-semibold text-pink-700 mb-2">🔥 Mood Streak</h2>
+    <p class="text-4xl font-bold text-pink-600">{{ current_streak }} Days</p>
+    <p class="text-sm text-pink-500 mt-1">You've been logging your mood {{ current_streak }} day{{ 's' if current_streak != 1 else '' }} in a row. Keep it up!</p>
+
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Mood Calendar -->
+<div class="bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-pink-600">Mood Calendar 📆</h2>
+    <div class="space-x-2">
+      <a href="{{ url_for('dashboard', year=prev_year, month=prev_month) }}"
+         class="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-lg">← Prev</a>
+      <span class="font-semibold text-gray-700">{{ calendar.month_name[month] }} {{ year }}</span>
+      <a href="{{ url_for('dashboard', year=next_year, month=next_month) }}"
+         class="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-lg">Next →</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-7 gap-2 text-center text-sm font-medium text-gray-500 mb-2">
+    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+  </div>
+
+  <div class="grid grid-cols-7 gap-2 text-center text-sm">
+    {% for _ in range(start_day) %}
+      <div></div>
+    {% endfor %}
+    {% for day in range(1, days_in_month + 1) %}
+      {% set mood = calendar_data.get(day) %}
+      {% if mood %}
+        {% set bg = {
+          'happy': 'bg-yellow-300',
+          'sad': 'bg-blue-300',
+          'angry': 'bg-red-300',
+          'anxious': 'bg-purple-300',
+          'calm': 'bg-green-300'
+        }.get(mood, 'bg-gray-200') %}
+        <div class="{{ bg }} p-2 rounded-xl font-semibold">{{ day }}</div>
+      {% else %}
+        <div class="bg-gray-100 p-2 rounded-xl text-gray-400">{{ day }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+    <!-- Mood Input -->
+<div class="bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
+  <h2 class="text-xl font-semibold text-pink-600 mb-4">Log Your Mood 📝</h2>
+  <form method="POST" action="/log_mood" class="space-y-4">
+    <label class="block text-sm font-medium text-gray-600">Select Date</label>
+    <input type="date" name="mood_date"
+           class="w-full p-3 rounded-xl border border-pink-300"
+           max="{{ today.strftime('%Y-%m-%d') }}" required>
+
+    <label class="block text-sm font-medium text-gray-600">Select Mood</label>
+    <select name="mood"
+            class="w-full p-3 rounded-xl border border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-400"
+            required>
+      <option value="" disabled selected>-- Select your mood --</option>
+      <option value="happy">😊 Happy</option>
+      <option value="sad">😢 Sad</option>
+      <option value="angry">😠 Angry</option>
+      <option value="anxious">😟 Anxious</option>
+      <option value="calm">😌 Calm</option>
+    </select>
+
+    <button type="submit"
+            class="w-full bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition">
+      Save Mood
+    </button>
+  </form>
+</div>
+
+
+
+    <!-- Mood Stats -->
+    <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
+      <h2 class="text-xl font-semibold text-pink-600 mb-4">Mood Insights 📊</h2>
+      <div class="flex flex-col items-center">
+        <div class="max-w-xs w-full">
+          <canvas id="moodChart"></canvas>
+        </div>
+        {% if mood_count %}
+          <ul class="text-sm text-gray-600 mt-4 text-center">
+            {% for mood, count in mood_count.items() %}
+              <li>{{ mood.capitalize() }}: {{ count }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-gray-500 mt-4">No mood data available yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mood History -->
+    <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
+      <h2 class="text-xl font-semibold text-pink-600 mb-4">Your Mood History 📅</h2>
+      {% if moods %}
+        <ul class="space-y-2 max-h-64 overflow-auto">
+          {% for mood_entry in moods %}
+            <li class="flex justify-between items-center border-b border-pink-100 py-2">
+              <span class="capitalize">{{ mood_entry.mood }}</span>
+              <span class="text-sm text-gray-400">{{ mood_entry.date.strftime('%b %d, %Y') }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-gray-500">No mood entries found yet. Start by saving your mood today!</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Emotion Detection Tools Section -->
+  <div class="mt-10 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
+    <h2 class="text-xl font-semibold text-pink-600 mb-4 text-center">🎯 Explore Emotion Detection Tools</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+      <a href="/face_emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
+        <div class="text-4xl mb-2">📸</div>
+        <h3 class="font-semibold text-pink-700 text-lg">Facial Emotion Detection</h3>
+        <p class="text-sm text-gray-500 mt-1">Turn on your webcam to detect your mood visually.</p>
+      </a>
+      <a href="/text_emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
+        <div class="text-4xl mb-2">💬</div>
+        <h3 class="font-semibold text-pink-700 text-lg">Text Emotion Analyzer</h3>
+        <p class="text-sm text-gray-500 mt-1">Write what you feel — we'll detect the underlying emotion.</p>
+      </a>
+      <a href="/voice-emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
+        <div class="text-4xl mb-2">🎤</div>
+        <h3 class="font-semibold text-pink-700 text-lg">Voice Emotion Detection</h3>
+        <p class="text-sm text-gray-500 mt-1">Analyze your voice tone and mood from audio.</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Chart Script -->
+  <script>
+    const ctx = document.getElementById('moodChart').getContext('2d');
+    const moodChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: {{ mood_count.keys()|list|tojson }},
+        datasets: [{
+          label: 'Mood Distribution',
+          data: {{ mood_count.values()|list|tojson }},
+          backgroundColor: ['#facc15', '#60a5fa', '#f87171', '#a78bfa', '#34d399', '#e5e7eb']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

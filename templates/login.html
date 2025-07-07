@@ -1,0 +1,97 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | MindSpace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-btn.active-tab {
+      border-bottom: 2px solid #ec4899; /* pink-500 */
+      color: #ec4899;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body class="bg-pink-50 flex items-center justify-center min-h-screen font-sans">
+  <div class="bg-white/90 shadow-2xl rounded-3xl w-full max-w-4xl p-10 border border-pink-200 flex flex-col justify-between min-h-[600px]">
+
+    <!-- Header Section -->
+    <div class="text-center mb-6">
+      <h1 class="text-4xl font-bold text-pink-700">Welcome to <span class="text-pink-500">MindSpace</span></h1>
+      <p class="text-sm text-pink-500 mt-1">Your personalised mood tracking corner.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex justify-center gap-6 mb-6">
+      <button id="login-tab" class="tab-btn active-tab px-4 py-2 text-lg focus:outline-none">Login</button>
+      <button id="register-tab" class="tab-btn px-4 py-2 text-lg focus:outline-none">Register</button>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="text-sm text-center py-2 rounded-md 
+              {% if category == 'success' %}bg-green-100 text-green-700
+              {% elif category == 'error' %}bg-red-100 text-red-700
+              {% elif category == 'warning' %}bg-yellow-100 text-yellow-700
+              {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Login Form -->
+    <form id="login-form" method="POST" action="/login" class="space-y-4">
+      <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <div class="flex justify-between items-center">
+        <a href="/forgot-password" class="text-sm text-pink-500 hover:underline">Forgot password?</a>
+        <button type="submit" class="bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition">Login</button>
+      </div>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" method="POST" action="/register" class="space-y-4 hidden">
+      <input type="text" name="name" placeholder="Name" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <input type="number" name="age" placeholder="Age" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <input type="email" name="email" placeholder="Email" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <input type="password" name="password" placeholder="Password" required class="w-full px-4 py-3 border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"/>
+      <button type="submit" class="bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition">Register</button>
+    </form>
+
+    <!-- About Icon at Bottom -->
+    <div class="flex justify-end pt-8">
+      <a href="/about" title="What is MindSpace?" class="text-pink-400 hover:text-pink-600 text-2xl">❓</a>
+    </div>
+
+  </div>
+
+  <!-- Script for Toggle -->
+  <script>
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    loginTab.addEventListener('click', () => {
+      loginTab.classList.add('active-tab');
+      registerTab.classList.remove('active-tab');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+    });
+
+    registerTab.addEventListener('click', () => {
+      registerTab.classList.add('active-tab');
+      loginTab.classList.remove('active-tab');
+      registerForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>

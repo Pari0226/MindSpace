@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Mood Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-4xl mx-auto py-10 px-6">
+        <!-- Header -->
+        <div class="bg-white shadow-lg rounded-2xl p-6 mb-6 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-800">🎙 Voice Mood Analyzer</h1>
+            <a href="/dashboard" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl shadow">← Back to Dashboard</a>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-lg text-white
+                            {% if category == 'success' %}bg-green-500
+                            {% elif category == 'error' %}bg-red-500
+                            {% elif category == 'info' %}bg-blue-500
+                            {% else %}bg-gray-500{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Voice Input Card -->
+        <div class="bg-white shadow-lg rounded-2xl p-8 text-center">
+            <form method="POST">
+                <button type="submit"
+                        class="bg-purple-600 hover:bg-purple-700 text-white text-lg font-semibold py-3 px-6 rounded-xl shadow-lg flex items-center justify-center mx-auto transition duration-200 ease-in-out">
+                    <svg class="w-6 h-6 mr-2 animate-pulse" fill="none" stroke="currentColor" stroke-width="2"
+                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 1v2m0 18v2m7.071-7.071l1.414 1.414M3.515 3.515l1.414 1.414M1 12h2m18 0h2m-3.515 7.071l-1.414-1.414M4.929 19.071l-1.414-1.414M12 5a4 4 0 014 4v3a4 4 0 01-8 0V9a4 4 0 014-4z"></path>
+                    </svg>
+                    Start Voice Analysis
+                </button>
+            </form>
+
+            {% if transcription %}
+                <div class="mt-8 text-left">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">📝 You said:</h2>
+                    <p class="bg-gray-100 p-4 rounded-xl text-gray-700">{{ transcription }}</p>
+
+                    <h2 class="text-xl font-semibold text-gray-800 mt-6">😊 Detected Mood:</h2>
+                    <p class="text-2xl font-bold text-indigo-600 mt-2">{{ mood }} {{ emoji }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Python junk
+__pycache__/
+*.pyc
+*.pyd
+*.pkl
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+venv310/
+ml_model/venv310/
+ml_model/Emotion_Dectector/venv310/
+
+# Frontend junk
+node_modules/
+dist/
+build/
+
+# System junk
+.vscode/
+.DS_Store
