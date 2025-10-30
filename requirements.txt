@@ -1,0 +1,10 @@
+passlib
+argon2-cffi
+python-dotenv
+flask
+flask_sqlalchemy
+joblib
+numpy
+opencv-python-headless
+keras
+pandas

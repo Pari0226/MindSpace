@@ -6,190 +6,793 @@
   <title>Dashboard | MindSpace</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-pink-50 min-h-screen p-6 font-sans">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .calendar-day { padding: 8px; text-align: center; border: 1px solid #fda29b; border-radius: 6px; }
+    .calendar-day.empty { border: none; }
+    /* Journal Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 60; }
+    .modal-open { display: flex; }
+    .modal-card { width: 650px; max-width: 85vw; max-height: 85vh; background: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; opacity: 0; transform: scale(0.95); animation: modalFadeIn .3s ease-out forwards; border: 1px solid #f5d0c1; display: flex; flex-direction: column; }
+    @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalFadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+    .modal-exit { animation: modalFadeOut .2s ease-in forwards; }
+    .modal-header { padding: 14px 16px; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-weight: 800; color: #2c3e50; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .modal-subtitle { margin-top: 2px; font-size: 12px; color: #475569; }
+    .modal-close { cursor: pointer; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; color: #64748b; }
+    .modal-close:hover { background: #f5f5f5; color: #ef4444; }
+    .modal-body { padding: 16px; overflow: auto; flex: 1 1 auto; }
+    .modal-label { font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .modal-textarea { width: 100%; min-height: 380px; padding: 16px; border: 2px solid #fda29b; border-radius: 10px; outline: none; resize: vertical; background: #fafafa; font-size: 15px; line-height: 1.6; transition: border-color .2s, box-shadow .2s, background .2s; scroll-behavior: smooth; }
+    .modal-textarea:focus { border-color: #f97066; background: #fff; box-shadow: 0 0 0 4px rgba(249,112,102,0.1); }
+    .modal-footer { padding: 16px; display: grid; gap: 10px; }
+    .btn-save { background: linear-gradient(135deg, #f97066 0%, #f86559 100%); color: #fff; padding: 14px 20px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: filter .15s, transform .15s; }
+    .btn-save:hover { filter: brightness(0.92); transform: scale(1.02); }
+    .btn-save:active { filter: brightness(0.85); }
+    .btn-cancel { background: #f0f0f0; color: #666; padding: 12px 20px; border-radius: 8px; text-align: center; font-weight: 500; border: 1px solid #ddd; cursor: pointer; }
+    .btn-cancel:hover { background: #e5e5e5; }
+    .save-disabled { opacity: 0.6; cursor: not-allowed; }
+    .char-counter { font-size: 12px; font-weight: 500; padding-top: 8px; transition: color .3s; }
+    .counter-gray { color: #888; }
+    .counter-warn { color: #f9a825; }
+    .counter-alert { color: #f97066; }
+    .counter-hint { font-size: 12px; color: #64748b; margin-left: 8px; }
+    .success-card { display: none; background: #f0fdf4; border: 2px solid #86efac; border-radius: 10px; padding: 24px; text-align: center; animation: successIn .4s ease-out; }
+    @keyframes successIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .success-icon { width: 44px; height: 44px; border-radius: 9999px; background: #86efac; color: #065f46; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 8px; }
+    .error-card { display: none; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 10px; padding: 16px; }
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.6); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .mood-pills { display: flex; gap: 8px; }
+    .mood-pill { border: 1px solid #f5d0c1; background: #fff; border-radius: 9999px; padding: 6px 10px; cursor: pointer; font-size: 18px; line-height: 1; transition: background .15s, box-shadow .15s, border-color .15s; }
+    .mood-pill.selected { background: #fff7f7; border-color: #f97066; box-shadow: 0 0 0 3px rgba(249,112,102,0.15); }
 
-  <!-- Navigation Bar -->
-  <nav class="bg-white border border-pink-200 shadow-lg rounded-xl px-6 py-4 mb-8 flex justify-between items-center">
-    <div class="text-pink-700 text-xl font-bold">MindSpace</div>
-    <ul class="flex space-x-6 text-pink-600 font-medium text-sm">
-      <li><a href="/dashboard" class="hover:text-pink-800 transition">Dashboard</a></li>
-      <li><a href="/about" class="hover:text-pink-800 transition">About</a></li>
-      <li><a href="/help" class="hover:text-pink-800 transition">Help</a></li>
-      <li>
-        <a href="/logout" class="hover:text-white bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-lg transition">
-          Logout
-        </a>
-      </li>
-    </ul>
+    @media (max-width: 576px) {
+      .modal-card { max-width: 95vw; width: 95vw; height: 90vh; max-height: 90vh; }
+      .modal-header, .modal-body, .modal-footer { padding: 16px; }
+      .modal-textarea { min-height: 300px; }
+      .mood-pills { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body class="bg-[#fef3f2] min-h-screen p-4 sm:p-6 font-sans">
+
+  <!-- ONBOARDING POPUP -->
+  <div id="onboarding" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
+      <h2 class="text-2xl font-bold mb-3">Welcome to MindSpace</h2>
+      <ul class="space-y-2 text-slate-700 text-sm list-disc list-inside">
+        <li>Write your journal daily</li>
+        <li>AI extracts your real mood from text</li>
+        <li>System learns your patterns (triggers, worst days, trends)</li>
+        <li>Get personalized 7-day mood predictions</li>
+        <li>Understand your emotional patterns</li>
+      </ul>
+      <button id="onboard-ok" class="mt-5 w-full bg-pink-500 hover:bg-pink-700 text-white py-2 rounded-lg">Got it, let's start</button>
+    </div>
+  </div>
+
+  <!-- NAV / HEADER -->
+  <nav class="bg-white border border-pink-100 shadow rounded-xl px-4 py-3 mb-5 flex justify-between items-center">
+    <div class="text-pink-600 text-lg font-extrabold" style="font-family: 'Poppins', ui-sans-serif, system-ui">MindSpace 🧠</div>
+    <div class="flex items-center gap-4 text-sm">
+      <a href="/predictions" class="text-pink-600 hover:text-pink-800">Mood Forecast</a>
+      <a href="/about" class="text-pink-600 hover:text-pink-800">About</a>
+      <a href="/help" class="text-pink-600 hover:text-pink-800">Help</a>
+      <a href="/logout" class="text-white bg-pink-500 hover:bg-pink-700 px-3 py-1.5 rounded-lg">Logout</a>
+    </div>
   </nav>
 
-  <!-- Welcome Header -->
-  <div class="text-center mb-6">
-    <h1 class="text-3xl font-bold text-pink-700">Welcome, {{ user }} 🌸</h1>
-    <p class="text-pink-500 mt-2">Here’s your mood tracking dashboard</p>
-  </div>
+  <header class="mb-4">
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Welcome, {{ user }} 👋</h1>
+  </header>
 
-  <!-- Mood Streak -->
-  <div class="bg-gradient-to-r from-pink-200 via-pink-100 to-pink-200 rounded-2xl shadow-md border border-pink-300 px-6 py-4 mb-8 text-center">
-    <h2 class="text-xl font-semibold text-pink-700 mb-2">🔥 Mood Streak</h2>
-    <p class="text-4xl font-bold text-pink-600">{{ current_streak }} Days</p>
-    <p class="text-sm text-pink-500 mt-1">You've been logging your mood {{ current_streak }} day{{ 's' if current_streak != 1 else '' }} in a row. Keep it up!</p>
+  <!-- STREAK (redesigned) -->
+  <section class="rounded-2xl shadow border px-5 py-4 mb-6" style="background:#fef3f2; border-color:#fda29b;">
+    <h2 class="text-2xl font-extrabold text-pink-700 mb-1">🔥 Mood Streak</h2>
+    <div class="flex flex-wrap items-center gap-x-3 text-slate-800 font-semibold">
+      <span id="streak-current">0 Days Current</span>
+      <span class="text-slate-400">|</span>
+      <span id="streak-best">0 Days Best</span>
+      <span class="text-slate-400">|</span>
+      <span id="streak-percent">0% Logged This Month</span>
+    </div>
+    <p id="streak-msg" class="mt-2 italic text-pink-700">You're on fire! Keep it up! 🚀</p>
+    <p id="streak-last" class="mt-1 text-sm text-slate-600">Last logged: —</p>
+  </section>
 
-  </div>
+  <!-- MAIN GRID -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <!-- LEFT COLUMN: Mood logging and actions -->
+    <div class="lg:col-span-2 space-y-4">
+      <!-- Log Your Mood -->
+      <section class="bg-white rounded-2xl shadow border border-pink-100 p-4">
+        <h3 class="text-lg font-semibold mb-3">Log Your Mood 📝</h3>
+        <form id="mood-form" method="POST" action="/log_mood" class="grid grid-cols-1 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div>
+              <label class="block text-xs text-slate-600 mb-1">Date</label>
+              <input type="date" id="mood_date" name="mood_date" class="w-full p-2 rounded-lg border border-slate-300" required>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1">Select Mood</label>
+              <select id="mood_select" name="mood" class="w-full p-2 rounded-lg border border-slate-300" required>
+                <option value="" disabled selected>Choose...</option>
+                <option value="happy">😊 Happy</option>
+                <option value="ok">😐 Okay</option>
+                <option value="sad">😢 Sad</option>
+                <option value="excited">🤩 Excited</option>
+                <option value="anxious">😰 Anxious</option>
+                <option value="calm">😌 Calm</option>
+                <option value="energized">⚡ Energized</option>
+                <option value="tired">😴 Tired</option>
+                <option value="stressed">😤 Stressed</option>
+                <option value="grateful">🙏 Grateful</option>
+                <option value="other">✍️ Other / Write Custom</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" data-mood="happy" class="quick-mood bg-[#fde3dc] hover:bg-[#fcd5cc] text-[#9a3412] px-3 py-2 rounded-lg text-sm">Happy</button>
+              <button type="button" data-mood="ok" class="quick-mood bg-pink-100 hover:bg-pink-200 text-pink-800 px-3 py-2 rounded-lg text-sm">Okay</button>
+              <button type="button" data-mood="sad" class="quick-mood bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-2 rounded-lg text-sm">Sad</button>
+            </div>
+          </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Custom mood input (hidden unless Other is selected) -->
+          <div id="custom_mood_wrap" class="hidden">
+            <label class="block text-xs text-slate-600 mb-1">Describe your mood...</label>
+            <input type="text" id="custom_mood" name="custom_mood" placeholder="Describe your mood..." class="w-full p-2 rounded-lg border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+          </div>
 
-    <!-- Mood Calendar -->
-<div class="bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold text-pink-600">Mood Calendar 📆</h2>
-    <div class="space-x-2">
-      <a href="{{ url_for('dashboard', year=prev_year, month=prev_month) }}"
-         class="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-lg">← Prev</a>
-      <span class="font-semibold text-gray-700">{{ calendar.month_name[month] }} {{ year }}</span>
-      <a href="{{ url_for('dashboard', year=next_year, month=next_month) }}"
-         class="bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-1 rounded-lg">Next →</a>
+          <!-- Intensity slider -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs text-slate-600">How intense is this mood?</label>
+              <span id="intensity_val" class="text-xs font-semibold text-pink-700">5/10</span>
+            </div>
+            <input type="range" id="intensity" name="intensity" min="1" max="10" value="5" class="w-full h-2 rounded-lg appearance-none cursor-pointer transition-all" />
+          </div>
+
+          <div>
+            <button type="submit" class="w-full bg-pink-500 hover:bg-pink-700 text-white px-4 py-2 rounded-lg transition">Save Mood</button>
+          </div>
+        </form>
+        <p id="last-mood" class="text-xs text-slate-600 mt-2">Last logged: —</p>
+      </section>
+
+      <!-- Journal Action -->
+      <section class="bg-white rounded-2xl shadow border border-pink-100 p-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold">✍️ Write Today's Journal</h3>
+          <p class="text-sm text-slate-600">You've written <span id="journal-count">0</span> entries</p>
+        </div>
+        <button type="button" onclick="openJournalModal()" class="bg-pink-500 hover:bg-pink-700 text-white px-4 py-2 rounded-lg">Start Writing</button>
+      </section>
+
+      <!-- 7-Day Forecast (on dashboard) -->
+      <section class="bg-white rounded-2xl shadow border border-pink-100 p-4">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="text-lg font-semibold">7-Day Mood Forecast</h3>
+          <a href="/predictions" class="text-sm text-pink-700 hover:text-pink-800">Detailed view</a>
+        </div>
+        <div id="forecast" class="grid grid-cols-7 gap-2 overflow-x-auto lg:overflow-visible"></div>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN: Compact calendar, pie chart, history -->
+    <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- Clean Calendar (new) -->
+      <section class="bg-white rounded-2xl shadow border border-pink-100 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <button id="calPrev" type="button" class="px-2 py-1 text-sm rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200">← Prev</button>
+          <h3 id="calLabel" class="text-base font-semibold text-slate-800">Month Year</h3>
+          <button id="calNext" type="button" class="px-2 py-1 text-sm rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200">Next →</button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-xs mb-1">
+          <div class="text-slate-500">Mon</div>
+          <div class="text-slate-500">Tue</div>
+          <div class="text-slate-500">Wed</div>
+          <div class="text-slate-500">Thu</div>
+          <div class="text-slate-500">Fri</div>
+          <div class="text-slate-500">Sat</div>
+          <div class="text-slate-500">Sun</div>
+        </div>
+        <div id="calendarContainer" class="calendar-grid"></div>
+      </section>
+
+      <!-- Small Pie Chart -->
+      <section class="bg-white rounded-2xl shadow border border-pink-100 p-4 flex flex-col items-center">
+        <h3 class="text-lg font-semibold mb-2">Mood Insights 📊</h3>
+        <div class="w-[200px] h-[200px]"><canvas id="pieChart" width="200" height="200"></canvas></div>
+        <ul id="pieLabels" class="mt-2 text-xs text-slate-700 space-y-1"></ul>
+      </section>
+
+      <!-- Compact History -->
+      <section class="sm:col-span-2 bg-white rounded-2xl shadow border border-pink-100 p-4">
+        <div class="flex items-baseline justify-between mb-2">
+          <h3 class="text-lg font-semibold">Recent Journal Entries</h3>
+          <a href="/predictions" class="text-sm text-pink-700 hover:text-pink-800">View All</a>
+        </div>
+        <ul id="history" class="divide-y divide-slate-200 text-sm"></ul>
+      </section>
     </div>
   </div>
 
-  <div class="grid grid-cols-7 gap-2 text-center text-sm font-medium text-gray-500 mb-2">
-    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
-  </div>
-
-  <div class="grid grid-cols-7 gap-2 text-center text-sm">
-    {% for _ in range(start_day) %}
-      <div></div>
-    {% endfor %}
-    {% for day in range(1, days_in_month + 1) %}
-      {% set mood = calendar_data.get(day) %}
-      {% if mood %}
-        {% set bg = {
-          'happy': 'bg-yellow-300',
-          'sad': 'bg-blue-300',
-          'angry': 'bg-red-300',
-          'anxious': 'bg-purple-300',
-          'calm': 'bg-green-300'
-        }.get(mood, 'bg-gray-200') %}
-        <div class="{{ bg }} p-2 rounded-xl font-semibold">{{ day }}</div>
-      {% else %}
-        <div class="bg-gray-100 p-2 rounded-xl text-gray-400">{{ day }}</div>
-      {% endif %}
-    {% endfor %}
-  </div>
-</div>
-
-    <!-- Mood Input -->
-<div class="bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
-  <h2 class="text-xl font-semibold text-pink-600 mb-4">Log Your Mood 📝</h2>
-  <form method="POST" action="/log_mood" class="space-y-4">
-    <label class="block text-sm font-medium text-gray-600">Select Date</label>
-    <input type="date" name="mood_date"
-           class="w-full p-3 rounded-xl border border-pink-300"
-           max="{{ today.strftime('%Y-%m-%d') }}" required>
-
-    <label class="block text-sm font-medium text-gray-600">Select Mood</label>
-    <select name="mood"
-            class="w-full p-3 rounded-xl border border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-400"
-            required>
-      <option value="" disabled selected>-- Select your mood --</option>
-      <option value="happy">😊 Happy</option>
-      <option value="sad">😢 Sad</option>
-      <option value="angry">😠 Angry</option>
-      <option value="anxious">😟 Anxious</option>
-      <option value="calm">😌 Calm</option>
-    </select>
-
-    <button type="submit"
-            class="w-full bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition">
-      Save Mood
-    </button>
-  </form>
-</div>
-
-
-
-    <!-- Mood Stats -->
-    <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
-      <h2 class="text-xl font-semibold text-pink-600 mb-4">Mood Insights 📊</h2>
-      <div class="flex flex-col items-center">
-        <div class="max-w-xs w-full">
-          <canvas id="moodChart"></canvas>
+  <!-- Journal Modal -->
+  <div id="journalModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modal-title"><span style="font-size:24px">📝</span> Today's Journal Entry</div>
+          <div class="modal-subtitle" id="modal-date-sub">Wednesday, October 29, 2025</div>
         </div>
-        {% if mood_count %}
-          <ul class="text-sm text-gray-600 mt-4 text-center">
-            {% for mood, count in mood_count.items() %}
-              <li>{{ mood.capitalize() }}: {{ count }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-gray-500 mt-4">No mood data available yet.</p>
-        {% endif %}
+        <button class="modal-close" onclick="attemptCloseModal()" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="journalFormWrap">
+        <div class="modal-label">Optional: Pre-select your current mood</div>
+        <div class="mood-pills" id="moodPills">
+          <button type="button" class="mood-pill" data-mood="happy" aria-label="Happy">😊</button>
+          <button type="button" class="mood-pill" data-mood="sad" aria-label="Sad">😢</button>
+          <button type="button" class="mood-pill" data-mood="anxious" aria-label="Anxious">😰</button>
+          <button type="button" class="mood-pill" data-mood="calm" aria-label="Calm">😌</button>
+          <button type="button" class="mood-pill" data-mood="stressed" aria-label="Stressed">😤</button>
+        </div>
+        <div class="modal-label mt-4">What's on your mind today?</div>
+        <textarea id="journalTextarea" class="modal-textarea" maxlength="5000" placeholder="Write freely about your day... ✨"></textarea>
+        <div class="flex items-center justify-between mt-2">
+          <div class="char-counter counter-gray" id="charCounter"><span id="journalChars">0</span> / 5,000 characters <span id="counterHint" class="counter-hint"></span></div>
+          <div id="journalError" class="error-text">Failed to save. Please try again.</div>
+        </div>
+      </div>
+      <div class="modal-body success-card" id="journalSuccessCard">
+        <div class="success-icon">✓</div>
+        <div class="text-xl font-bold mb-1">Saved Successfully! 🎉</div>
+        <div id="succEmotion" class="text-base mb-1">📊 Emotion: —</div>
+        <div id="succScore" class="text-base mb-2">Mood Score: —</div>
+        <div class="w-full max-w-sm mx-auto h-2 bg-slate-200 rounded">
+          <div id="succBar" class="h-2 bg-emerald-400 rounded" style="width:0%"></div>
+        </div>
+        <div id="succConf" class="text-sm text-slate-600 mt-2">Confidence: —</div>
+        <div id="succPred" class="text-sm text-slate-700 mt-1">✨ Tomorrow's mood prediction: —</div>
+        <button class="btn-cancel mt-4" onclick="closeJournalModal(true)">Done</button>
+      </div>
+      <div class="modal-body error-card" id="journalErrorCard">
+        <div class="text-lg font-semibold mb-1">⚠️ Oops! Failed to Save</div>
+        <div class="text-sm mb-3">Please check your internet connection and try again.</div>
+        <div class="grid gap-2">
+          <button class="btn-save" onclick="saveJournal()">Retry</button>
+          <button class="btn-cancel" onclick="closeJournalModal()">Cancel</button>
+        </div>
+      </div>
+      <div class="modal-footer" id="journalButtons">
+        <button id="journalSaveBtn" class="btn-save" onclick="saveJournal()"><span class="mr-1">💾</span> Save</button>
+        <button id="journalCancelBtn" class="btn-cancel" onclick="attemptCloseModal()">Cancel</button>
       </div>
     </div>
-
-    <!-- Mood History -->
-    <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
-      <h2 class="text-xl font-semibold text-pink-600 mb-4">Your Mood History 📅</h2>
-      {% if moods %}
-        <ul class="space-y-2 max-h-64 overflow-auto">
-          {% for mood_entry in moods %}
-            <li class="flex justify-between items-center border-b border-pink-100 py-2">
-              <span class="capitalize">{{ mood_entry.mood }}</span>
-              <span class="text-sm text-gray-400">{{ mood_entry.date.strftime('%b %d, %Y') }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="text-gray-500">No mood entries found yet. Start by saving your mood today!</p>
-      {% endif %}
-    </div>
   </div>
 
-  <!-- Emotion Detection Tools Section -->
-  <div class="mt-10 bg-white p-6 rounded-2xl shadow-lg border border-pink-200">
-    <h2 class="text-xl font-semibold text-pink-600 mb-4 text-center">🎯 Explore Emotion Detection Tools</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-      <a href="/face_emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
-        <div class="text-4xl mb-2">📸</div>
-        <h3 class="font-semibold text-pink-700 text-lg">Facial Emotion Detection</h3>
-        <p class="text-sm text-gray-500 mt-1">Turn on your webcam to detect your mood visually.</p>
-      </a>
-      <a href="/text_emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
-        <div class="text-4xl mb-2">💬</div>
-        <h3 class="font-semibold text-pink-700 text-lg">Text Emotion Analyzer</h3>
-        <p class="text-sm text-gray-500 mt-1">Write what you feel — we'll detect the underlying emotion.</p>
-      </a>
-      <a href="/voice-emotion" class="transform hover:scale-105 transition bg-pink-100 hover:bg-pink-200 p-6 rounded-2xl border border-pink-300 shadow-sm">
-        <div class="text-4xl mb-2">🎤</div>
-        <h3 class="font-semibold text-pink-700 text-lg">Voice Emotion Detection</h3>
-        <p class="text-sm text-gray-500 mt-1">Analyze your voice tone and mood from audio.</p>
-      </a>
-    </div>
-  </div>
-
-  <!-- Chart Script -->
   <script>
-    const ctx = document.getElementById('moodChart').getContext('2d');
-    const moodChart = new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: {{ mood_count.keys()|list|tojson }},
-        datasets: [{
-          label: 'Mood Distribution',
-          data: {{ mood_count.values()|list|tojson }},
-          backgroundColor: ['#facc15', '#60a5fa', '#f87171', '#a78bfa', '#34d399', '#e5e7eb']
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'bottom'
-          }
+    // Onboarding popup logic (don't show again)
+    const ob = document.getElementById('onboarding');
+    const ok = document.getElementById('onboard-ok');
+    async function maybeShowOnboarding() {
+      try {
+        const r = await fetch('/api/onboarding/status');
+        const d = await r.json();
+        if (!d.seen) ob.classList.remove('hidden');
+      } catch (e) {
+        // Fallback to localStorage if API not available
+        if (!localStorage.getItem('mindspace_onboarded')) {
+          ob.classList.remove('hidden');
         }
       }
+    }
+    ok.addEventListener('click', async () => {
+      try {
+        await fetch('/api/onboarding/seen', { method: 'POST' });
+      } catch (e) {
+        localStorage.setItem('mindspace_onboarded', '1');
+      }
+      ob.classList.add('hidden');
     });
+
+    // Helpers
+    function toDateOnly(dstr) {
+      const d = new Date(dstr);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    function formatDate(d) {
+      return d.toLocaleDateString();
+    }
+    function colorForScore(score) {
+      if (score === null || score === undefined) return 'bg-slate-100';
+      if (score >= 0.3) return 'bg-emerald-300';
+      if (score <= -0.3) return 'bg-rose-300';
+      return 'bg-amber-300';
+    }
+    function textColorForScore(score) {
+      if (score >= 0.3) return 'text-emerald-800';
+      if (score <= -0.3) return 'text-rose-800';
+      return 'text-amber-900';
+    }
+    function moodStringToScore(mood, intensity){
+      if (!mood) return 0;
+      const m = String(mood).toLowerCase();
+      const pos = ['happy','excited','energized','calm','grateful'];
+      const neg = ['sad','anxious','tired','stressed'];
+      let base = 0;
+      if (pos.some(x=>m.includes(x))) base = 0.6;
+      else if (neg.some(x=>m.includes(x))) base = -0.6;
+      else if (m.includes('ok') || m.includes('okay') || m.includes('neutral')) base = 0.0;
+      // adjust slightly by intensity (1..10) around base
+      const iv = Math.max(1, Math.min(10, Number(intensity)||5));
+      const adj = (iv - 5) / 20; // -0.2 .. +0.25 approx
+      return base + adj;
+    }
+    function computeCurrentStreak(dates) {
+      if (!dates.length) return 0;
+      dates.sort((a,b)=>a-b);
+      let current = 1;
+      for (let i = dates.length - 1; i > 0; i--) {
+        const diff = (dates[i] - dates[i-1]) / (1000*60*60*24);
+        if (diff === 1) current += 1; else break;
+      }
+      // If latest day is older than yesterday, streak is 0
+      const today = new Date();
+      const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate()-1);
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const last = dates[dates.length-1];
+      if (last < yesterday && last.getTime() !== todayOnly.getTime()) return 0;
+      return current;
+    }
+    function computeBestStreak(dates) {
+      if (!dates.length) return 0;
+      dates.sort((a,b)=>a-b);
+      let best = 1, cur = 1;
+      for (let i=1;i<dates.length;i++) {
+        const diff = (dates[i] - dates[i-1]) / (1000*60*60*24);
+        if (diff === 1) { cur += 1; } else { best = Math.max(best, cur); cur = 1; }
+      }
+      best = Math.max(best, cur);
+      return best;
+    }
+    function percentLoggedThisMonth(dates) {
+      if (!dates.length) return 0;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+      const count = dates.filter(d => d.getFullYear()===year && d.getMonth()===month).length;
+      return Math.round((count / daysInMonth) * 100);
+    }
+
+    // Mood quick buttons
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('quick-mood')) {
+        const mood = e.target.getAttribute('data-mood');
+        document.getElementById('mood_select').value = mood;
+        if (!document.getElementById('mood_date').value) {
+          const today = new Date();
+          document.getElementById('mood_date').value = today.toISOString().slice(0,10);
+        }
+        // Hide custom input if using quick presets
+        const wrap = document.getElementById('custom_mood_wrap');
+        if (wrap) wrap.classList.add('hidden');
+      }
+    });
+
+    // Toggle custom mood input on dropdown
+    const moodSelectEl = document.getElementById('mood_select');
+    const customWrapEl = document.getElementById('custom_mood_wrap');
+    if (moodSelectEl && customWrapEl) {
+      moodSelectEl.addEventListener('change', () => {
+        const v = (moodSelectEl.value || '').toLowerCase();
+        if (v === 'other' || v === 'custom') {
+          customWrapEl.classList.remove('hidden');
+          document.getElementById('custom_mood').focus();
+        } else {
+          customWrapEl.classList.add('hidden');
+        }
+      });
+    }
+
+    // Intensity slider visual feedback
+    const intensityEl = document.getElementById('intensity');
+    const intensityValEl = document.getElementById('intensity_val');
+    function setIntensityVisuals(val){
+      const v = Math.max(1, Math.min(10, Number(val)||5));
+      if (intensityValEl) intensityValEl.textContent = `${v}/10`;
+      const pct = (v-1) / 9 * 100; // 0..100
+      // Pink/peach gradient fill up to pct
+      const fill = `linear-gradient(90deg, #fda29b 0%, #ec4899 ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)`;
+      if (intensityEl) intensityEl.style.background = fill;
+    }
+    function setIntensity_visuals(val){ setIntensityVisuals(val); }
+    if (intensityEl) {
+      setIntensityVisuals(intensityEl.value);
+      intensityEl.addEventListener('input', (e)=> setIntensityVisuals(e.target.value));
+      intensityEl.addEventListener('change', (e)=> setIntensityVisuals(e.target.value));
+    }
+
+    // Calendar state
+    let calYear;
+    let calMonth; // 0-indexed like JS Date
+
+    // Data loading (initial)
+    async function loadData() {
+      maybeShowOnboarding();
+      const today = new Date();
+      document.getElementById('mood_date').max = today.toISOString().slice(0,10);
+      // init calendar state to today
+      calYear = today.getFullYear();
+      calMonth = today.getMonth();
+      try {
+        const [journalRes, moodRes, emotionsRes, predictRes] = await Promise.all([
+          fetch('/api/journal/get'),
+          fetch('/api/mood/get'),
+          fetch('/api/mood/emotions-this-month'),
+          fetch('/api/predict')
+        ]);
+        const journal = await journalRes.json();
+        const moodData = await moodRes.json();
+        const emotionsData = await emotionsRes.json();
+        const predict = await predictRes.json();
+
+        // Journal stats
+        const entries = journal.entries || [];
+        document.getElementById('journal-count').textContent = entries.length;
+        const datesMap = new Map();
+        let lastLoggedText = '—'; // journal timestamp
+        let lastMoodText = '—';
+        let lastMoodDateOnly = null; // from Mood table
+        entries.forEach(e => {
+          const when = e.created_at || e.entry_date;
+          if (when) {
+            const dayKey = new Date(when).toISOString().slice(0,10);
+            const v = (typeof e.mood_score === 'number') ? e.mood_score : 0;
+            // average per day
+            if (!datesMap.has(dayKey)) datesMap.set(dayKey, []);
+            datesMap.get(dayKey).push(v);
+            if (!lastLoggedText || new Date(when) > new Date(lastLoggedText)) {
+              lastLoggedText = when;
+              lastMoodText = v;
+            }
+          }
+        });
+
+        // Merge Mood table data for calendar and streak
+        const moods = (moodData && Array.isArray(moodData.moods)) ? moodData.moods : [];
+        moods.forEach(m => {
+          if (!m.date) return;
+          const dayKey = new Date(m.date).toISOString().slice(0,10);
+          const score = moodStringToScore(m.mood, m.intensity);
+          if (!datesMap.has(dayKey)) datesMap.set(dayKey, []);
+          datesMap.get(dayKey).push(score);
+          const md = new Date(m.date);
+          if (!lastMoodDateOnly || md > lastMoodDateOnly) lastMoodDateOnly = md;
+        });
+
+        // Streak metrics
+        const dateObjs = Array.from(datesMap.keys()).map(k => toDateOnly(k));
+        const currentStreak = computeCurrentStreak(dateObjs);
+        const bestStreak = computeBestStreak(dateObjs);
+        const percent = percentLoggedThisMonth(dateObjs);
+        document.getElementById('streak-current').textContent = `${currentStreak} Day${currentStreak===1?'':'s'} Current`;
+        document.getElementById('streak-best').textContent = `${bestStreak} Day${bestStreak===1?'':'s'} Best`;
+        document.getElementById('streak-percent').textContent = `${percent}% Logged This Month`;
+        // Last logged
+        if (lastLoggedText !== '—' || lastMoodDateOnly) {
+          const jt = lastLoggedText !== '—' ? new Date(lastLoggedText) : null;
+          const mt = lastMoodDateOnly ? new Date(lastMoodDateOnly) : null;
+          const latest = (!jt || (mt && mt > jt)) ? mt : jt;
+          if (latest) {
+            document.getElementById('streak-last').textContent = `Last logged: ${latest.toLocaleString()}`;
+            document.getElementById('last-mood').textContent = `Last logged: ${latest.toLocaleDateString()}`;
+          }
+        }
+
+        // Calendar will be initialized by initCalendar()
+        initCalendar();
+
+        // Pie chart: combined emotions this month (journals + mood logs)
+        const counts = (emotionsData && emotionsData.counts) ? emotionsData.counts : {};
+        console.log('[pie] combined counts:', counts);
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+        const colors = ['#fecdd3','#fda4af','#fb7185','#fca5a5','#f87171','#f59e0b','#fdba74','#fda29b','#f43f5e'];
+        if (labels.length && values.reduce((a,b)=>a+b,0) > 0) {
+          const ctx = document.getElementById('pieChart').getContext('2d');
+          new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length) }] }, options: { responsive: true, plugins: { legend: { display: false }}}});
+          const ul = document.getElementById('pieLabels');
+          ul.innerHTML = '';
+          const total = values.reduce((a,b)=>a+b,0);
+          labels.forEach((l,i)=>{
+            const li = document.createElement('li');
+            const pct = Math.round(100*values[i]/total);
+            li.innerHTML = `<span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${colors[i]}"></span>${l} (${pct}%)`;
+            ul.appendChild(li);
+          });
+        } else {
+          const ctx = document.getElementById('pieChart').getContext('2d');
+          ctx.clearRect(0,0,200,200);
+          const ul = document.getElementById('pieLabels');
+          ul.innerHTML = '<li class="text-slate-500">Write journals to see emotion insights</li>';
+        }
+
+        // History compact (last 5-7)
+        const hist = document.getElementById('history');
+        hist.innerHTML = '';
+        entries.slice(0,7).forEach(e => {
+          const when = e.created_at || e.entry_date;
+          const dt = when ? new Date(when).toLocaleDateString() : '—';
+          const mood = (typeof e.mood_score === 'number') ? e.mood_score.toFixed(2) : '—';
+          const emotion = e.emotion || '—';
+          const secondaryEmotion = e.secondary_emotion || null;
+          const text = (e.entry_text || '').slice(0,80) + ((e.entry_text||'').length>80 ? '…':'');
+          const li = document.createElement('li');
+          li.className = 'py-2 flex items-center justify-between';
+          const emoHtml = secondaryEmotion ? `<span class="italic">${emotion}</span><span class="italic"> + ${secondaryEmotion}</span>` : `<span class="italic">${emotion}</span>`;
+          li.innerHTML = `<div class="truncate pr-2"><span class="text-slate-500">${dt}</span> • <span class="${textColorForScore(e.mood_score)}">${mood}</span> • ${emoHtml} • <span class="text-slate-800">${text}</span></div>`;
+          hist.appendChild(li);
+        });
+
+        // Forecast cards
+        const fwrap = document.getElementById('forecast');
+        fwrap.innerHTML = '';
+        if (predict.status === 'success') {
+          (predict.predictions || []).forEach(p => {
+            const d = new Date(p.date);
+            const score = Number(p.predicted_mood ?? p.score ?? 0);
+            let bg = '#f8d7da', border = '#f5c6cb', textColor = '#721c24', emoji = '😟';
+            if (score >= 0.7) { bg = '#d4edda'; border = '#c3e6cb'; textColor = '#28a745'; emoji = '😊'; }
+            else if (score >= 0.4) { bg = '#fff3cd'; border = '#ffeeba'; textColor = '#856404'; emoji = '😐'; }
+            const card = document.createElement('div');
+            card.setAttribute('style', `background:${bg}; border-radius:12px; padding:16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,0.08); border:1px solid ${border};`);
+            const dayName = p.day_name || d.toLocaleDateString(undefined,{weekday:'long'});
+            const dateStr = d.toLocaleDateString();
+            card.innerHTML = `
+              <div style="font-size:24px; margin-bottom:8px;">${emoji}</div>
+              <div style="font-size:14px; color:#666; margin-bottom:8px;">${dayName}</div>
+              <div style="font-size:12px; color:#999; margin-bottom:12px;">${dateStr}</div>
+              <div style="font-size:28px; font-weight:bold; color:${textColor};">${score.toFixed(2)}</div>
+            `;
+            fwrap.appendChild(card);
+          });
+        } else {
+          fwrap.innerHTML = '<div class="text-sm text-slate-600">Add more entries to see your forecast.</div>';
+        }
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // NEW CALENDAR FROM SCRATCH
+    let calState = { year: (new Date()).getFullYear(), month: (new Date()).getMonth() };
+
+    function buildCalendarHTML(year, monthIndex) {
+      const firstDay = new Date(year, monthIndex, 1);
+      const lastDay = new Date(year, monthIndex + 1, 0);
+      let startDay = firstDay.getDay();
+      startDay = (startDay + 6) % 7; // Monday-first
+      const daysInMonth = lastDay.getDate();
+      let html = '';
+      for (let i=0;i<startDay;i++) html += '<div class="calendar-day empty"></div>';
+      for (let day=1; day<=daysInMonth; day++) {
+        const y = year;
+        const m = monthIndex + 1;
+        const yyyy = y;
+        const mm = String(m).padStart(2,'0');
+        const dd = String(day).padStart(2,'0');
+        html += `<div class="calendar-day" data-date="${yyyy}-${mm}-${dd}">${day}</div>`;
+      }
+      return html;
+    }
+
+    function applyMoodColors(year, monthIndex, moods) {
+      const mapColor = (m) => {
+        const str = (m || '').toLowerCase();
+        if (str.includes('happy') || str.includes('excited') || str.includes('calm') || str.includes('energized') || str.includes('grateful')) return '#86efac';
+        if (str.includes('sad') || str.includes('anxious') || str.includes('stressed') || str.includes('angry')) return '#fda4af';
+        if (str.includes('ok') || str.includes('okay') || str.includes('neutral')) return '#fbbf24';
+        return '#e5e7eb';
+      };
+      moods.forEach(m => {
+        if (!m.date) return;
+        const el = document.querySelector(`.calendar-day[data-date="${m.date}"]`);
+        if (el) el.style.background = mapColor(m.mood);
+      });
+    }
+
+    async function renderCalendarGrid(year, monthIndex) {
+      const label = document.getElementById('calLabel');
+      const container = document.getElementById('calendarContainer');
+      if (!label || !container) return;
+      label.textContent = new Date(year, monthIndex, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+      container.innerHTML = buildCalendarHTML(year, monthIndex);
+      try {
+        const res = await fetch(`/api/mood/calendar?year=${year}&month=${monthIndex+1}`);
+        const data = await res.json();
+        if (Array.isArray(data.moods)) applyMoodColors(year, monthIndex, data.moods);
+      } catch(_) {}
+    }
+
+    function initCalendar() {
+      // Start on current month
+      renderCalendarGrid(calState.year, calState.month);
+      document.getElementById('calPrev')?.addEventListener('click', async () => {
+        if (calState.month === 0) { calState.month = 11; calState.year -= 1; } else { calState.month -= 1; }
+        await renderCalendarGrid(calState.year, calState.month);
+      });
+      document.getElementById('calNext')?.addEventListener('click', async () => {
+        if (calState.month === 11) { calState.month = 0; calState.year += 1; } else { calState.month += 1; }
+        await renderCalendarGrid(calState.year, calState.month);
+      });
+    }
+
+    // Client-side debug for form submit
+    const moodForm = document.getElementById('mood-form');
+    if (moodForm) {
+      moodForm.addEventListener('submit', () => {
+        try {
+          const payload = {
+            mood: document.getElementById('mood_select').value,
+            date: document.getElementById('mood_date').value,
+            custom: document.getElementById('custom_mood') ? document.getElementById('custom_mood').value : undefined,
+            intensity: document.getElementById('intensity') ? document.getElementById('intensity').value : undefined
+          };
+          console.log('[mood-form submit]', payload);
+        } catch(_) {}
+      });
+    }
+
+    loadData();
+
+    // ===== JOURNAL MODAL LOGIC =====
+    const modalEl = document.getElementById('journalModal');
+    const taEl = document.getElementById('journalTextarea');
+    const charsEl = document.getElementById('journalChars');
+    const counterEl = document.getElementById('charCounter');
+    const counterHintEl = document.getElementById('counterHint');
+    const saveBtn = document.getElementById('journalSaveBtn');
+    const errorEl = document.getElementById('journalError');
+    const successCard = document.getElementById('journalSuccessCard');
+    const errorCard = document.getElementById('journalErrorCard');
+    const formWrap = document.getElementById('journalFormWrap');
+    const modalCard = document.querySelector('#journalModal .modal-card');
+    const saveBtnOrigHTML = saveBtn.innerHTML;
+    const moodPills = document.getElementById('moodPills');
+    const modalTitleDate = document.getElementById('modal-date-sub');
+    let preselectedMood = '';
+    let lastFocusEl = null;
+
+    function updateHeaderDate() {
+      const d = new Date();
+      const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      modalTitleDate.textContent = d.toLocaleDateString(undefined, opts);
+    }
+
+    function openJournalModal() {
+      if (!modalEl) return;
+      errorEl.style.display = 'none';
+      errorCard.style.display = 'none';
+      successCard.style.display = 'none';
+      formWrap.style.display = 'block';
+      document.getElementById('journalButtons').style.display = 'grid';
+      taEl.value = '';
+      charsEl.textContent = '0';
+      counterEl.classList.remove('counter-warn','counter-alert');
+      counterEl.classList.add('counter-gray');
+      counterHintEl.textContent = '';
+      preselectedMood = '';
+      Array.from(moodPills.querySelectorAll('.mood-pill')).forEach(p => p.classList.remove('selected'));
+      updateHeaderDate();
+      lastFocusEl = document.activeElement;
+      modalEl.classList.add('modal-open');
+      modalEl.setAttribute('aria-hidden','false');
+      modalCard.classList.remove('modal-exit');
+      // focus after short delay for iOS
+      setTimeout(()=> taEl.focus(), 50);
+    }
+    function closeJournalModal(immediate=false) {
+      modalEl.setAttribute('aria-hidden','true');
+      if (immediate) {
+        modalEl.classList.remove('modal-open');
+      } else {
+        modalCard.classList.add('modal-exit');
+        setTimeout(()=> { modalEl.classList.remove('modal-open'); modalCard.classList.remove('modal-exit'); }, 200);
+      }
+      if (lastFocusEl) { try { lastFocusEl.focus(); } catch(_) {} }
+    }
+    function attemptCloseModal() {
+      if (taEl.value && taEl.value.trim().length > 10) {
+        const ok = confirm('Discard your entry?');
+        if (!ok) return;
+      }
+      closeJournalModal();
+    }
+    // close on overlay click
+    modalEl.addEventListener('click', (e)=>{ if (e.target === modalEl) attemptCloseModal(); });
+    // close on Escape
+    document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && modalEl.classList.contains('modal-open')) attemptCloseModal(); });
+    // char counter
+    taEl.addEventListener('input', ()=> {
+      const len = taEl.value.length;
+      charsEl.textContent = len.toLocaleString();
+      counterEl.classList.remove('counter-gray','counter-warn','counter-alert');
+      let hint = '';
+      if (len < 1000) { counterEl.classList.add('counter-gray'); }
+      else if (len <= 4000) { counterEl.classList.add('counter-warn'); hint = ''; }
+      else { counterEl.classList.add('counter-alert'); hint = `You're using ${Math.round(len/5000*100)}% of available space`; }
+      counterHintEl.textContent = hint;
+    });
+
+    // mood selector
+    moodPills.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.mood-pill');
+      if (!btn) return;
+      const val = btn.getAttribute('data-mood');
+      if (preselectedMood === val) { preselectedMood = ''; btn.classList.remove('selected'); return; }
+      preselectedMood = val;
+      Array.from(moodPills.querySelectorAll('.mood-pill')).forEach(p => p.classList.remove('selected'));
+      btn.classList.add('selected');
+      // keep data-selected-mood for external handlers
+      moodPills.setAttribute('data-selected-mood', preselectedMood || 'neutral');
+    });
+
+    async function saveJournal() {
+      if (!taEl.value.trim()) { errorEl.textContent = 'Please write something.'; errorEl.style.display = 'block'; return; }
+      errorEl.style.display = 'none';
+      saveBtn.classList.add('save-disabled');
+      saveBtn.innerHTML = '<span class="spinner"></span> <span class="ml-2">Saving...</span>';
+      try {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth()+1).padStart(2,'0');
+        const dd = String(today.getDate()).padStart(2,'0');
+        const payload = { date: `${yyyy}-${mm}-${dd}`, content: taEl.value, timestamp: new Date().toISOString(), preselected_mood: preselectedMood || undefined };
+        const resp = await fetch('/api/journal/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await resp.json();
+        if (!resp.ok || !data || data.error) throw new Error(data?.error || 'Save failed');
+        // Success card content
+        const labMap = { joy:'Joy', happy:'Joy', calm:'Calm', anxious:'Anxious', angry:'Angry', tired:'Tired', sad:'Sad', stressed:'Stressed', surprise:'Surprise', neutral:'Neutral', disgust:'Disgust', fear:'Fear' };
+        const eLabel = (data.emotion || '').toLowerCase();
+        const sLabelRaw = (data.secondary_emotion || '').toLowerCase();
+        const sLabel = sLabelRaw ? (labMap[sLabelRaw] || data.secondary_emotion) : '';
+        const score = (typeof data.mood_score === 'number') ? Number(data.mood_score) : null;
+        const conf = (typeof data.confidence === 'number') ? Math.round(Number(data.confidence)*100) : null;
+        document.getElementById('succEmotion').textContent = `📊 Emotion: ${labMap[eLabel] || '—'}${sLabel ? ' + ' + sLabel : ''}`;
+        document.getElementById('succScore').textContent = `Mood Score: ${score !== null ? score.toFixed(2) : '—'} / 1.00`;
+        document.getElementById('succBar').style.width = `${Math.max(0, Math.min(1, score||0))*100}%`;
+        document.getElementById('succConf').textContent = `Confidence: ${conf !== null ? conf + '%' : '—'}`;
+        if (data.prediction) {
+          const pred = data.prediction;
+          const pemo = (pred.emotion || '—').toString().charAt(0).toUpperCase()+ (pred.emotion||'—').toString().slice(1);
+          const pscore = (typeof pred.score === 'number') ? Number(pred.score).toFixed(2) : '—';
+          document.getElementById('succPred').textContent = `✨ Tomorrow's mood prediction: ${pemo} (${pscore})`;
+        } else {
+          document.getElementById('succPred').textContent = '✨ Tomorrow\'s mood prediction: —';
+        }
+        // Show success card and hide form/buttons
+        formWrap.style.display = 'none';
+        document.getElementById('journalButtons').style.display = 'none';
+        successCard.style.display = 'block';
+        // refresh dashboard widgets without reload
+        try { await loadData(); } catch(_) {}
+        // auto close
+        setTimeout(()=> closeJournalModal(), 2500);
+      } catch (err) {
+        formWrap.style.display = 'none';
+        document.getElementById('journalButtons').style.display = 'none';
+        errorCard.style.display = 'block';
+      } finally {
+        saveBtn.classList.remove('save-disabled');
+        saveBtn.innerHTML = saveBtnOrigHTML;
+      }
+    }
   </script>
+  
 </body>
 </html>

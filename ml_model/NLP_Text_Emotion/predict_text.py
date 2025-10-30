@@ -59,7 +59,7 @@ def main():
     else:
         st.subheader("About")
         st.write("This is an NLP powered webapp that can predict emotion from text recognition with 70 percent accuracy, Many python libraries like Numpy, Pandas, Seaborn, Scikit-learn, Scipy, Joblib, eli5, lime, neattext, altair, streamlit was used. Streamlit was mainly used for the front-end development, Linear regression model from the scikit-learn library was used to train a dataset containing speeches and their respective emotions. Joblib was used for storing and using the trained model in the website")
-        st.caption('Created by: Riza Mohamed')
+        st.caption('Created by: Pari Singh')
 
 if __name__ == "__main__":
     main()

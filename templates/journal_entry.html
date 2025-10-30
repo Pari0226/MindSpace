@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Journal Entry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-3xl mx-auto p-6">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold">Write about your day</h1>
+      <a href="/predictions" class="text-sm text-indigo-700 hover:underline">View Predictions</a>
+    </header>
+
+    <div id="panel" class="rounded-xl bg-white border border-slate-200 shadow p-6">
+      <form id="journal-form" class="space-y-4">
+        <label class="block text-sm font-medium text-slate-700">Your Journal</label>
+        <textarea id="text" rows="8" placeholder="Write about your day..." class="w-full rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+        <div class="flex items-center gap-3">
+          <button id="submit" type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg disabled:opacity-60">Save Entry</button>
+          <span id="status" class="text-sm text-slate-600"></span>
+        </div>
+      </form>
+
+      <div id="result" class="hidden mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p class="text-sm text-slate-700">Saved! Your mood score: <span id="mood-score" class="font-semibold"></span>  <span id="emotion" class="ml-2 text-slate-600"></span></p>
+        <div class="mt-3">
+          <a href="/predictions" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow">View Predictions</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('journal-form');
+    const textEl = document.getElementById('text');
+    const submitBtn = document.getElementById('submit');
+    const statusEl = document.getElementById('status');
+    const resultBox = document.getElementById('result');
+    const moodSpan = document.getElementById('mood-score');
+    const emotionSpan = document.getElementById('emotion');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = textEl.value.trim();
+      if (!text) return;
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Saving...';
+      resultBox.classList.add('hidden');
+      try {
+        const res = await fetch('/api/journal/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (res.ok && data && data.status === 'saved') {
+          statusEl.textContent = 'Saved!';
+          moodSpan.textContent = (typeof data.mood_score === 'number') ? data.mood_score.toFixed(2) : '--';
+          const label = data.emotion ? `(${data.emotion})` : '';
+          emotionSpan.textContent = label;
+          resultBox.classList.remove('hidden');
+          textEl.value = '';
+        } else {
+          statusEl.textContent = data.error || 'Failed to save.';
+        }
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error saving entry.';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

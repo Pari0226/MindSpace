@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predictions Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Header / User Info -->
+    <header class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold">Welcome <span id="username">{{ user or 'User' }}</span></h1>
+        <p class="text-slate-600">Last updated: <span id="last-updated">--</span></p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="openJournalModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow">
+          <span>✍️ Write Journal Entry</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Overview Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="rounded-xl bg-white shadow p-6 border-l-4 border-l-rose-400">
+        <p class="text-sm text-slate-500 mb-2">Current Baseline</p>
+        <p id="baseline" class="text-4xl font-extrabold text-rose-600">--</p>
+        <p id="baseline-reason" class="text-slate-600 mt-2 text-sm">&nbsp;</p>
+      </div>
+      <div class="rounded-xl bg-white shadow p-6 border-l-4 border-l-rose-400">
+        <p class="text-sm text-slate-500 mb-2">Trend</p>
+        <div class="flex items-center gap-2">
+          <span id="trend-indicator" class="inline-block w-2 h-2 rounded-full bg-slate-300"></span>
+          <p id="trend" class="text-2xl font-semibold capitalize text-rose-600">--</p>
+        </div>
+        <p id="slope" class="text-slate-600 mt-2 text-sm">&nbsp;</p>
+      </div>
+      <div class="rounded-xl bg-white shadow p-6 border-l-4 border-l-rose-400">
+        <p class="text-sm text-slate-500 mb-2">Worst Day</p>
+        <p id="worst-day" class="text-2xl font-semibold text-rose-600">--</p>
+        <p class="text-slate-600 mt-2 text-sm">Based on average mood per weekday</p>
+      </div>
+    </section>
+
+    <!-- Predictions -->
+    <section class="mb-10">
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="text-xl font-bold text-slate-800">7-Day Prediction</h2>
+        <p id="prediction-note" class="text-sm text-slate-500">Your predictions are based on your journal entries and personal patterns</p>
+      </div>
+      <div id="predictions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </section>
+
+    <!-- Patterns & Journal -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+      <div class="rounded-xl bg-white shadow p-6 border-l-4 border-l-rose-400 lg:col-span-2">
+        <h3 class="text-lg font-semibold mb-4 text-slate-800">Patterns</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-slate-500 text-sm mb-2">Top Triggers (High Mood)</p>
+            <ul id="triggers-high" class="space-y-1 list-disc list-inside text-rose-700 font-medium"></ul>
+          </div>
+          <div>
+            <p class="text-slate-500 text-sm mb-2">Top Triggers (Low Mood)</p>
+            <ul id="triggers-low" class="space-y-1 list-disc list-inside text-rose-600 font-medium"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-xl bg-white shadow p-6 border-l-4 border-l-rose-400">
+        <h3 class="text-lg font-semibold mb-4 text-slate-800">Recent Journal Entries</h3>
+        <ul id="recent-journals" class="space-y-3"></ul>
+      </div>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="mb-16">
+      <div class="rounded-xl bg-gradient-to-r from-rose-50 to-orange-50 border-l-4 border-l-rose-400 p-6 shadow">
+        <h3 class="text-lg font-semibold mb-2 text-slate-800">Recommendations</h3>
+        <p id="recommendation" class="text-slate-700">--</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const weekdayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    function setTrend(trend) {
+      const indicator = document.getElementById('trend-indicator');
+      const trendText = document.getElementById('trend');
+      trendText.textContent = trend || '--';
+      indicator.classList.remove('bg-slate-300','bg-green-500','bg-red-500','bg-yellow-500');
+      if (trend === 'improving') indicator.classList.add('bg-green-500');
+      else if (trend === 'declining') indicator.classList.add('bg-red-500');
+      else indicator.classList.add('bg-yellow-500');
+    }
+
+    function colorForScore(score) {
+      // Adaptive thresholds for [0,1] range
+      if (score <= 2 && score >= -2) {
+        if (score >= 0.6) return 'bg-rose-100 text-rose-900 border-rose-200';
+        if (score <= 0.4) return 'bg-orange-100 text-orange-900 border-orange-200';
+        return 'bg-yellow-100 text-yellow-900 border-yellow-200';
+      } else {
+        if (score >= 7) return 'bg-rose-100 text-rose-900 border-rose-200';
+        if (score <= 4) return 'bg-orange-100 text-orange-900 border-orange-200';
+        return 'bg-yellow-100 text-yellow-900 border-yellow-200';
+      }
+    }
+
+    function renderPredictions(preds) {
+      const container = document.getElementById('predictions');
+      container.innerHTML = '';
+      preds.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `border-2 rounded-xl p-4 shadow-md transition hover:shadow-lg ${colorForScore(p.predicted_mood)}`;
+        const d = new Date(p.date);
+        const triggers = (p.triggers_found || []).join(', ');
+        const dayAvg = (p.day_avg != null) ? p.day_avg.toFixed(2) : '--';
+        card.innerHTML = `
+          <div class="flex items-baseline justify-between">
+            <div class="text-sm font-medium text-slate-700">${d.toLocaleDateString()}</div>
+            <div class="text-xs px-2 py-0.5 rounded bg-white/70 border border-white/80 font-semibold">${p.day_name || ''}</div>
+          </div>
+          <div class="mt-2 text-3xl font-extrabold">${p.predicted_mood.toFixed(2)}</div>
+          <div class="text-sm font-medium text-slate-700">Confidence: ${(p.confidence*100).toFixed(0)}%</div>
+          <div class="mt-2 text-xs text-slate-700">Day avg: <span class="font-bold">${dayAvg}</span></div>
+          <div class="mt-1 text-xs text-slate-700">Triggers: <span class="font-semibold">${triggers || '—'}</span></div>
+          <div class="mt-2 text-xs text-slate-600 italic">${p.reasoning || ''}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderTriggers(listEl, items) {
+      listEl.innerHTML = '';
+      (items || []).slice(0,10).forEach(([word, avg]) => {
+        const li = document.createElement('li');
+        li.textContent = `${word} (${avg})`;
+        listEl.appendChild(li);
+      });
+    }
+
+    function renderRecentJournals(list) {
+      const ul = document.getElementById('recent-journals');
+      ul.innerHTML = '';
+      (list || []).slice(0,5).forEach(e => {
+        const li = document.createElement('li');
+        li.className = 'border-l-4 border-l-rose-400 rounded-lg p-3 bg-gradient-to-r from-rose-50 to-orange-50';
+        const dt = e.created_at ? new Date(e.created_at).toLocaleString() : '';
+        li.innerHTML = `
+          <div class="flex items-baseline justify-between">
+            <span class="text-sm text-slate-600 font-medium">${dt}</span>
+            <span class="text-sm font-bold ${e.mood_score >= 0.5 ? 'text-rose-700' : 'text-orange-700'}">Mood: ${e.mood_score ?? '--'}</span>
+          </div>
+          <div class="mt-1 text-slate-800 text-sm">${(e.entry_text || '').slice(0,160)}${(e.entry_text || '').length > 160 ? '…' : ''}</div>
+          <div class="mt-1 text-sm text-slate-600">Emotion: <span class="font-semibold">${e.emotion || '--'}</span></div>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    async function loadAll() {
+      document.getElementById('last-updated').textContent = new Date().toLocaleString();
+      try {
+        const [predRes, patRes, journalRes] = await Promise.all([
+          fetch('/api/predict'),
+          fetch('/api/patterns'),
+          fetch('/api/journal/get')
+        ]);
+
+        const pred = await predRes.json();
+        const pat = await patRes.json();
+        const journal = await journalRes.json();
+
+        // Baseline & reasoning
+        if (pred.status === 'success') {
+          document.getElementById('baseline').textContent = pred.baseline?.toFixed(2);
+          document.getElementById('baseline-reason').textContent = pred.reasoning || '';
+          document.getElementById('recommendation').textContent = pred.recommendation || '';
+          renderPredictions(pred.predictions || []);
+        } else {
+          document.getElementById('baseline').textContent = '--';
+          document.getElementById('baseline-reason').textContent = pred.message || 'Add more entries to see predictions';
+          document.getElementById('recommendation').textContent = 'Try journaling daily to build prediction history.';
+          renderPredictions([]);
+        }
+
+        // Trend & worst day
+        setTrend(pat.trend || 'stable');
+        document.getElementById('slope').textContent = pat.slope != null ? `Slope: ${pat.slope}` : '';
+        const worstIdx = pat.worst_day;
+        document.getElementById('worst-day').textContent = Number.isInteger(worstIdx) ? weekdayNames[worstIdx] : '--';
+
+        // Triggers
+        renderTriggers(document.getElementById('triggers-high'), pat.triggers_high || []);
+        renderTriggers(document.getElementById('triggers-low'), pat.triggers_low || []);
+
+        // Journal
+        renderRecentJournals(journal.entries || []);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>
