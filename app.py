@@ -67,17 +67,64 @@ class JournalEntry(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     mood_score = db.Column(db.Float, nullable=True)
 
-# Load models
-face_classifier = cv2.CascadeClassifier("C:/Users/Lenovo/Desktop/mood tracker app/ml_model/Emotion_Dectector/haarcascade_frontalface_default.xml")
-classifier = load_model("C:/Users/Lenovo/Desktop/mood tracker app/ml_model/Emotion_Dectector/model.h5")
-nlp_model_path = "C:/Users/Lenovo/Desktop/mood tracker app/ml_model/NLP_Text_Emotion/models/emotion_classifier_pipe_lr_03_jan_2022.pkl"
-nlp_model = joblib.load(nlp_model_path)
-emotion_labels = ['Angry','Disgust','Fear','Happy','Neutral','Sad','Surprise']
+# ========== RENDER-OPTIMIZED MODEL LOADING ==========
+# Load models with relative paths (works on Render)
+def load_ml_models():
+    """Load all ML models at startup to avoid Render timeouts"""
+    global face_classifier, classifier, nlp_model, emotion_labels
+    
+    try:
+        # Get absolute path to app root
+        app_root = os.path.dirname(os.path.abspath(__file__))
+        
+        # Face detection cascade
+        cascade_path = os.path.join(app_root, 'ml_model', 'Emotion_Dectector', 'haarcascade_frontalface_default.xml')
+        face_classifier = cv2.CascadeClassifier(cascade_path)
+        if face_classifier.empty():
+            print(f"⚠️ WARNING: Could not load face cascade from {cascade_path}")
+        else:
+            print(f"✅ Face cascade loaded from {cascade_path}")
+        
+        # CNN model for facial emotion
+        model_path = os.path.join(app_root, 'ml_model', 'Emotion_Dectector', 'model.h5')
+        classifier = load_model(model_path)
+        print(f"✅ CNN model loaded from {model_path}")
+        
+        # NLP model for text emotion
+        nlp_model_path = os.path.join(app_root, 'ml_model', 'NLP_Text_Emotion', 'models', 'emotion_classifier_pipe_lr_03_jan_2022.pkl')
+        nlp_model = joblib.load(nlp_model_path)
+        print(f"✅ NLP model loaded from {nlp_model_path}")
+        
+        emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+        print(f"✅ All ML models loaded successfully")
+        
+    except Exception as e:
+        print(f"❌ ERROR loading ML models: {e}")
+        # Set fallbacks to prevent app crash
+        face_classifier = None
+        classifier = None
+        nlp_model = None
+        emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
-# NLP utilities
-from ml_model.NLP_Text_Emotion.text_emotion_utils import (
-    predict_emotions, get_prediction_proba, emotions_emoji_dict
-)
+# Initialize models as None (will be loaded at startup)
+face_classifier = None
+classifier = None
+nlp_model = None
+emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
+# NLP utilities import
+try:
+    from ml_model.NLP_Text_Emotion.text_emotion_utils import (
+        predict_emotions, get_prediction_proba, emotions_emoji_dict
+    )
+except ImportError as e:
+    print(f"⚠️ WARNING: Could not import NLP utilities: {e}")
+    # Provide dummy functions as fallback
+    def predict_emotions(text):
+        return 'neutral'
+    def get_prediction_proba(text):
+        return np.array([0.1] * 10)
+    emotions_emoji_dict = {}
 
 # Routes
 @app.route('/')
@@ -402,33 +449,43 @@ def detect_emotion():
 
 @app.route('/video_feed')
 def video_feed():
+    if face_classifier is None or classifier is None:
+        return jsonify({'error': 'Face detection model not loaded'}), 500
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 def generate_frames():
+    """Generate video frames with face emotion detection"""
+    if face_classifier is None or classifier is None:
+        print("⚠️ Models not loaded, cannot generate frames")
+        return
+    
     cap = cv2.VideoCapture(0)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_classifier.detectMultiScale(gray, 1.3, 5)
+    try:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_classifier.detectMultiScale(gray, 1.3, 5)
 
-        for (x, y, w, h) in faces:
-            roi_gray = gray[y:y+h, x:x+w]
-            roi_gray = cv2.resize(roi_gray, (48, 48))
-            if np.sum(roi_gray) != 0:
-                roi = roi_gray.astype("float") / 255.0
-                roi = img_to_array(roi)
-                roi = np.expand_dims(roi, axis=0)
-                prediction = classifier.predict(roi)[0]
-                label = emotion_labels[prediction.argmax()]
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
+            for (x, y, w, h) in faces:
+                roi_gray = gray[y:y+h, x:x+w]
+                roi_gray = cv2.resize(roi_gray, (48, 48))
+                if np.sum(roi_gray) != 0:
+                    roi = roi_gray.astype("float") / 255.0
+                    roi = img_to_array(roi)
+                    roi = np.expand_dims(roi, axis=0)
+                    prediction = classifier.predict(roi)[0]
+                    label = emotion_labels[prediction.argmax()]
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                    cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36, 255, 12), 2)
 
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    cap.release()
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    finally:
+        cap.release()
 
 @app.route('/text_emotion', methods=['GET', 'POST'])
 def text_emotion():
@@ -474,11 +531,9 @@ def extract_emotions_from_text(text):
         try:
             top_indices = np.argsort(proba)[-2:][::-1]
             model_classes = None
-            # Prefer classes_ from the app-loaded model if available, else from utils model if exposed
-            if 'nlp_model' in globals() and hasattr(nlp_model, 'classes_'):
+            # Try to get classes from the loaded NLP model
+            if nlp_model is not None and hasattr(nlp_model, 'classes_'):
                 model_classes = nlp_model.classes_
-            elif 'pipe_lr' in globals() and hasattr(pipe_lr, 'classes_'):
-                model_classes = pipe_lr.classes_
             if model_classes is not None and len(top_indices) > 1:
                 secondary_emotion = str(model_classes[top_indices[1]])
         except Exception:
@@ -1062,8 +1117,24 @@ def onboarding_seen():
     session['onboarding_seen'] = True
     return jsonify({'status': 'ok'})
 
-# Run app
+# ========== APPLICATION STARTUP ==========
 if __name__ == '__main__':
+    # Create database and tables
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+        # Load ML models at startup (prevents timeout on first request)
+        load_ml_models()
+    
+    # Production settings for Render
+    debug_mode = os.environ.get('FLASK_ENV', 'production') != 'production'
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Run Flask (Gunicorn will manage this on Render)
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=debug_mode,
+        threaded=True,
+        use_reloader=False  # Disable auto-reloader for Gunicorn compatibility
+    )
+

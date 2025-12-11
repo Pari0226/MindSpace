@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: mindspace-mood-tracker
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 2 --threads 2 --worker-class gthread --bind 0.0.0.0:$PORT --timeout 120 app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: FLASK_ENV
+        value: "production"
+      - key: APP_SECRET_KEY
+        generateValue: true
