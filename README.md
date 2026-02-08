@@ -109,9 +109,8 @@ Open in browser → http://localhost:5000
 - Trigger system is heuristic-based, not deep learning
 - No external datasets used for training
 
+## 💙 Built By
 
+🔗 Pari Singh
 
-###  💙 Built By
-
-## Pari Singh
-##  Exploring mental health through gentle technology ✨
+Exploring mental health through gentle technology ✨
