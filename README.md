@@ -1,108 +1,90 @@
-# 🌈 MindSpace – Your Personalized Mood Tracking Companion
+# 🌈 MindSpace – AI Mood Companion with 7-Day Forecasting
 
-**MindSpace** is a full-stack intelligent web application designed to help users track, visualize, and understand their emotional and mental well-being. From logging moods manually to detecting emotions through face, text, and voice, it creates a powerful and personal emotional space — like **Flo**, but for **everyone**.
-
----
-
-## 🎥 Demo
-
+### 🎥 Demo Video  
 Want to see MindSpace in action?  
-▶️ [Click here to watch the demo video](https://drive.google.com/file/d/14vbV7SeYCIE2FHFp8mXIy6L0zlDEGPzK/view)
+▶️ [Click here to watch the demo video](https://drive.google.com/file/d/12DqdVPHE6poTWr1ui2zGg7H_MiFS_F8t/view)
+
+MindSpace is a mental wellness platform that helps users track emotions, reflect through journaling, and receive **AI-powered 7-day mood forecasts**.  
+It combines **multi-modal emotion detection**, analytics, and personalized insights to help users understand their mental patterns over time.
 
 ---
 
-## ✨ Features
+## 🎯 What MindSpace Offers
 
-### 🎨 User Interface
-- 🔥 Splash screen with logo and tagline
-- 🔐 Login and registration pages with authentication
-- 🧾 About page for app overview
-- 📊 Dashboard with:
-  - Mood logging dropdown
-  - Calendar-based mood history
-  - Pie chart visualization of emotions
-
-### 🤖 Emotion Detection (ML-Powered)
-- 🎥 **Facial Emotion Detection** – detects emotional state using webcam
-- 📝 **Text Emotion Analysis** – identifies emotions from user-typed input
-- 🎙️ **Voice Emotion Analysis** – detects emotion based on speech audio
-
-### 📚 Mood Tracking System
-- 🗓️ Log current, past, or monthly moods via dropdown
-- 💾 Stores structured data into `mood.db` without mixing with emotion detection logs
-- 📈 Displays visual trends over time for self-reflection
-
-### 🧘 Mental Wellness Add-ons
-- 🧩 Tips and suggestions based on mood data
-- 📋 Survey form for user input to refine recommendations
-- 🧠 Symptom explanations and emotional insight cards
-
-### 💬 MoodMan – AI Chatbot (In Progress)
-- Empathetic AI chatbot offering a safe space to talk
-- Gives emotional support and self-help ideas instantly
+- Daily mood logging with **intensity scale (1–10)**
+- Journal writing with automatic emotion extraction  
+- **Facial emotion detection** via webcam  
+- Calendar & analytics dashboard  
+- AI-generated personalized insights  
+- **7-day mood prediction** with confidence scoring
 
 ---
 
-## 📊 Tech Stack
+## ✨ Core Features
 
-| Frontend                         | Backend       | ML/AI Models                              | Database |
-|----------------------------------|---------------|--------------------------------------------|----------|
-| HTML, CSS, Tailwind, JavaScript | Flask (Python) | CNN, TF-IDF + SVM, MFCC + Random Forest   | SQLite   |
+### 🧠 Multi-Modal Emotion Detection
+- **Text Emotion Analysis** – TF-IDF + Linear Regression model  
+- **Facial Emotion Recognition** – CNN model (7 classes: Happy, Sad, Angry, Neutral, Fear, Surprise, Disgust)  
+- **Voice Sentiment** – TextBlob based sentiment analysis
+
+### 📊 Mood Tracking & Analytics
+- Intensity-based mood logging  
+- Calendar visualization  
+- Emotion distribution charts  
+- Streak tracking & monthly overview
+
+### 🔮 7-Day Forecast Engine
+Predictions are generated using:
+- Baseline from last 7 entries  
+- Weekday behavioral patterns  
+- Polynomial trend slope  
+- Trigger keyword weights (-0.4 to +0.3)  
+- Recent momentum (70/30 blend)  
+- **Confidence score: 0.3 – 0.95**
+
+### 💡 Personalized Insights
+- Best & worst day detection  
+- Trigger identification from journals  
+- Consistency bonus logic  
+- Natural language reasoning for predictions
+
+### 🔐 Secure System
+- **Argon2 password hashing**  
+- User authentication & sessions  
+- SQLite database with SQLAlchemy
 
 ---
 
-## 🗂️ Project Structure
+## 🛠 Tech Stack
 
-├── static/
-│ └── css, js, images
-├── templates/
-│ └── login.html, dashboard.html, etc.
-├── models.py
-├── app.py
-├── ml_models/
-│ └── face_model.h5, text_model.pkl, voice_model.pkl
-├── database/
-│ └── app.db, mood.db
-└── README.md
+**Backend**
+- Flask  
+- Flask-SQLAlchemy  
+- Argon2  
+- OpenCV + Keras CNN  
+- Scikit-learn (TF-IDF + Linear Regression)  
+- TextBlob
+
+**Frontend**
+- HTML / CSS / Tailwind  
+- Vanilla JavaScript  
+- Interactive dashboard UI
 
 ---
 
-## 🚀 Getting Started
+## 🧩 Database Models
 
-### 1️⃣ Clone the repository
+- **User** – authentication & profile  
+- **Mood** – daily mood + intensity  
+- **JournalEntry** – text reflections  
+- **TextEmotion** – extracted emotions
+
+---
+
+## 🚀 How to Run Locally
 
 ```bash
-git clone https://github.com/yourusername/-mood-tracker-app.git
-cd mood-tracker-app
- Set up virtual environment
-bash
-Copy
-Edit
-python -m venv venv
-venv\Scripts\activate  # Windows
-3️⃣ Install dependencies
-bash
-Copy
-Edit
+git clone https://github.com/yourusername/mindspace.git
+cd mindspace
 pip install -r requirements.txt
-4️⃣ Run the app
-bash
-Copy
-Edit
 python app.py
-Then go to:
-📍 http://localhost:5000
-
-🧠 Machine Learning Models Used
-Task	Input	Model Type
-Emotion Detection	Face	CNN (.h5 model)
-Emotion Detection	Text	TF-IDF + SVM (.pkl)
-Emotion Detection	Voice	MFCC + Random Forest (.pkl)
-
-💡 Inspiration
-This app is inspired by the belief that emotional wellness should be trackable, understandable, and improvable just like physical health.
-Drawing from apps like Flo, Wysa, and Daylio, MindSpace provides a gender-neutral, inclusive space for anyone to care for their mental health.
-
-👩‍💻 Author
-Pari Singh
-B.Tech CSE | Developer 
