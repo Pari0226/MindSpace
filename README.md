@@ -113,5 +113,5 @@ Open in browser → http://localhost:5000
 
 ###  💙 Built By
 
-###  Pari Singh
-###  Exploring mental health through gentle technology ✨
+## Pari Singh
+##  Exploring mental health through gentle technology ✨
