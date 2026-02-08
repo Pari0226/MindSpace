@@ -1,4 +1,4 @@
-# 🌈 MindSpace – AI Mood Companion with 7-Day Forecasting
+# 🌈 MindSpace – AI Mood Companion with 7-Days Mood Forecasting
 
 ### 🎥 Demo Video  
 Want to see MindSpace in action?  
