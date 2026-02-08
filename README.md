@@ -91,33 +91,27 @@ python app.py
 ```   
 
 Open in browser → http://localhost:5000
-📌 Prediction Logic (High Level)
 
-Uses last 30 entries for context
+### 📌 Prediction Logic (High Level)
 
-Baseline from recent 7 moods
+- Uses last 30 entries for context  
+- Baseline from recent 7 moods  
+- Weekday clustering (Mon–Sun averages)  
+- Trend direction via polyfit slope
+- Trigger impact from journals
+- Generates daily reasoning text
+- Confidence clamped to 0.3–0.95
 
-Weekday clustering (Mon–Sun averages)
+###  ⚠ Honest Notes
 
-Trend direction via polyfit slope
+- Voice module is standalone
+- Text model accuracy not benchmarked
+- Trigger system is heuristic-based, not deep learning
+- No external datasets used for training
 
-Trigger impact from journals
 
-Generates daily reasoning text
 
-Confidence clamped to 0.3–0.95
-
-⚠ Honest Notes
-
-Text model accuracy not benchmarked
-
-Voice module is standalone
-
-Trigger system is heuristic-based, not deep learning
-
-No external datasets used for training
-
-💙 Built By
+###  s💙 Built By
 
 Pari Singh
 Exploring mental health through gentle technology ✨
