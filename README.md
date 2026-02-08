@@ -81,10 +81,18 @@ Predictions are generated using:
 
 ---
 
-## 🚀 How to Run Locallypython app.py
-Open → http://localhost:5000
+## 🚀 How to Run Locally
 
+```bash
+git clone https://github.com/yourusername/mindspace.git
+cd mindspace
+pip install -r requirements.txt
+python app.py
+```   
+
+Open in browser → http://localhost:5000
 📌 Prediction Logic (High Level)
+
 Uses last 30 entries for context
 
 Baseline from recent 7 moods
@@ -100,6 +108,7 @@ Generates daily reasoning text
 Confidence clamped to 0.3–0.95
 
 ⚠ Honest Notes
+
 Text model accuracy not benchmarked
 
 Voice module is standalone
@@ -109,11 +118,6 @@ Trigger system is heuristic-based, not deep learning
 No external datasets used for training
 
 💙 Built By
+
 Pari Singh
 Exploring mental health through gentle technology ✨
-
-```bash
-git clone https://github.com/yourusername/mindspace.git
-cd mindspace
-pip install -r requirements.txt
-python app.py
